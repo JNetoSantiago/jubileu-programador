@@ -2,7 +2,7 @@
 
 <p>&nbsp;</p>
 <p align='center'>
-  <img src="https://raw.githubusercontent.com/JNetoSantiago/jubileu-tutoriais/main/git_handbook/flow.png" width="500" />
+  <img src="https://raw.githubusercontent.com/JNetoSantiago/jubileu-programador/main/git_handbook/flow.png" width="500" />
 </p>
 <p align='center'><strong>Na figura acima nós temos um exemplo de uso do git flow.</strong></p>
 <p>&nbsp;</p>

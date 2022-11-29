@@ -12,4 +12,4 @@
 Aqui abaixo, você encontra todo o resultado do esforço dele na sua jornada como programador.
 
 * [Docker - Jubileu e seus containers](./docker_handbook)
-* Git - Jubileu quer versionar bem seus códigos
+* [Git - Jubileu quer versionar bem seus códigos](./git_handbook)
