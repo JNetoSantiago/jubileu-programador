@@ -1,7 +1,11 @@
 # <center>Jubileu, o cão programador!!!</center>
 
-![jubileu](https://raw.githubusercontent.com/JNetoSantiago/jubileu-tutoriais/main/jubileu.jpeg)
-Jubileu
+<p>&nbsp;</p>
+<p align='center'>
+  <img src="https://raw.githubusercontent.com/JNetoSantiago/jubileu-tutoriais/main/jubileu.jpeg" width="250" />
+</p>
+<p align='center'><strong>Jubileu</strong></p>
+<p>&nbsp;</p>
 
 
 > Jubileu é um cachorro programador, e ele quer programar bem, e para isso, ele está estudando (Óbvio). 
