@@ -14,3 +14,4 @@ Aqui abaixo, você encontra todo o resultado do esforço dele na sua jornada com
 * [Docker - Jubileu e seus containers](./docker_handbook)
 * [Git - Jubileu quer versionar bem seus códigos](./git_handbook)
 * [Rails - Jubileu quer criar um novo projeto rails](./rails_frontend_setup)
+* [SOLID - Jubileu quer aprender mais sobre SOLID](./solid)
