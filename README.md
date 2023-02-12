@@ -15,6 +15,7 @@ Aqui abaixo, você encontra todo o resultado do esforço dele na sua jornada com
 * [Git - Jubileu quer versionar bem seus códigos](./git_handbook)
 * [Rails - Jubileu quer criar um novo projeto rails](./rails_frontend_setup)
 * [SOLID - Jubileu quer aprender mais sobre SOLID](./solid)
+* [Domain Driven Design - Jubileu atacando a complexidade do coração do software](./solid)
 
 > É claro que nesta jornada ele também se deparou com erros, mas tratou de documentar muito bem para consultas posteriores.
 
