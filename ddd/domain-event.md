@@ -1,3 +1,5 @@
+### Domain Event
+
 "Use um evento de domínio para capturar uma ocorrência de algo que aconteceu no domínio." - Vaughn Vernon
 
 De acordo com Martin Fowler, um evento de domínio é um tipo de evento que é gerado quando algo significativo acontece no seu sistema de negócios. Eles são usados para transmitir informações sobre mudanças no estado do domínio para outros componentes do sistema, como serviços, aggregate roots e outros eventos de domínio. Eventos de domínio são diferentes de eventos simplesmente técnicos, como logs de auditoria ou notificações, pois eles têm um impacto real e significativo no estado do negócio. Além disso, os eventos de domínio são um elemento-chave da arquitetura de sistemas baseados em eventos, que buscam lidar com mudanças dinâmicas e incertas no sistema de negócios.

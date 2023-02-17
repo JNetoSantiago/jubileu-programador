@@ -1,3 +1,5 @@
+### Entity
+
 Domain-Driven Design (DDD) é uma abordagem de desenvolvimento de software que enfatiza a compreensão profunda do domínio de negócios em que o software será aplicado. A ideia central do DDD é que o design do software deve ser orientado pelo domínio, ou seja, pelas regras de negócio e pelas necessidades dos usuários finais.
 
 No DDD, o domínio é representado por um modelo de negócios que reflete as entidades, agregados, serviços e processos envolvidos no negócio. O modelo é criado por meio da colaboração entre especialistas do domínio (que conhecem as regras de negócio) e desenvolvedores de software (que conhecem as tecnologias e os padrões de design de software).
