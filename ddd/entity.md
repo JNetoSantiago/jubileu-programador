@@ -1,13 +1,5 @@
 ### Entity
 
-Domain-Driven Design (DDD) é uma abordagem de desenvolvimento de software que enfatiza a compreensão profunda do domínio de negócios em que o software será aplicado. A ideia central do DDD é que o design do software deve ser orientado pelo domínio, ou seja, pelas regras de negócio e pelas necessidades dos usuários finais.
-
-No DDD, o domínio é representado por um modelo de negócios que reflete as entidades, agregados, serviços e processos envolvidos no negócio. O modelo é criado por meio da colaboração entre especialistas do domínio (que conhecem as regras de negócio) e desenvolvedores de software (que conhecem as tecnologias e os padrões de design de software).
-
-O objetivo do DDD é criar um software que seja flexível, adaptável e escalável, capaz de lidar com as mudanças e complexidades do domínio de negócios. O DDD também promove a clareza e a comunicação efetiva entre os membros da equipe de desenvolvimento, tornando o processo de desenvolvimento mais colaborativo e eficiente.
-
-#### Entity (Entidade)
-
 Entities (ou Entidades) são objetos que representam conceitos ou coisas do mundo real em um sistema de software. Em Domain-Driven Design (DDD), as entidades são uma das principais construções do modelo de domínio e são usadas para representar as coisas que possuem uma identidade e um ciclo de vida.
 
 As entidades são caracterizadas por sua identidade única e inalterável, que é geralmente representada por um identificador, como um número de identificação único (ID) ou um código alfanumérico. Além disso, as entidades têm um conjunto de atributos ou propriedades que descrevem suas características e um conjunto de comportamentos que elas podem executar.
@@ -46,3 +38,49 @@ Essa abordagem permite que as regras de negócio sejam centralizadas em um únic
 No entanto, as entidades podem ter métodos que verificam se elas estão em um estado válido ou não. Esses métodos geralmente são usados internamente pela entidade para garantir a consistência de seu estado e podem ser úteis durante o desenvolvimento e testes.
 
 Em resumo, embora as entidades possam ter métodos de validação, a responsabilidade final pela validação geralmente é delegada a outros objetos, para que as entidades possam se concentrar em sua responsabilidade principal de representar conceitos do mundo real em um sistema de software.
+
+#### Classes anêmicas
+No contexto do Domain-Driven Design (DDD), não há um conceito específico de "classe anêmica". No entanto, o termo "anemia" às vezes é usado para descrever uma classe que contém apenas dados sem comportamento correspondente. Em outras palavras, uma classe anêmica é uma classe que não tem métodos significativos além dos getters e setters.
+
+No DDD, o objetivo é criar um modelo rico em comportamento que reflita o domínio da aplicação e as regras de negócios relevantes. Uma classe anêmica pode ser um indicador de que o modelo de domínio não está sendo expresso adequadamente ou que a lógica de negócios está sendo colocada em outros lugares, como em serviços ou controladores.
+
+Para combater a anemia de uma classe, é preciso avaliar a semântica dos dados e identificar comportamentos que possam ser movidos para a classe. É importante lembrar que o DDD não se trata apenas de criar classes ricas em comportamento, mas sim de criar um modelo que reflita as regras de negócios e que seja fácil de entender e manter.
+
+#### Exemplos de classes anêmicas e não anêmicas
+
+Classe anêmica em Ruby:
+```ruby
+class Pessoa
+  attr_accessor :nome, :idade, :endereco, :telefone
+end
+```
+
+Esta classe tem apenas atributos e getters/setters, mas não tem comportamento significativo.
+
+Exemplo de classe não anêmica em Ruby:
+
+```ruby
+class ContaBancaria
+  def initialize(saldo_inicial)
+    @saldo = saldo_inicial
+  end
+
+  def depositar(valor)
+    @saldo += valor
+  end
+
+  def sacar(valor)
+    if @saldo >= valor
+      @saldo -= valor
+    else
+      raise "Saldo insuficiente."
+    end
+  end
+
+  def saldo
+    @saldo
+  end
+end
+```
+
+Neste exemplo, a classe ContaBancaria tem comportamentos significativos, como depositar, sacar e verificar o saldo da conta. Os atributos são usados internamente para armazenar o estado da conta e não são expostos publicamente por meio de getters/setters.
