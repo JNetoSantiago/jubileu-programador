@@ -18,6 +18,8 @@ Aqui abaixo, você encontra todo o resultado do esforço dele na sua jornada com
 * [SOLID - Jubileu quer aprender mais sobre SOLID](./solid)
 * [Domain Driven Design - Jubileu atacando a complexidade do coração do software](./ddd)
 
+* [Langchain](./langchain)
+
 > É claro que nesta jornada ele também se deparou com erros, mas tratou de documentar muito bem para consultas posteriores.
 
 * [Erro ao dar um bundle install com a gem pg](./errors/pg-gem.md)
