@@ -17,6 +17,7 @@ Aqui abaixo, você encontra todo o resultado do esforço dele na sua jornada com
 * [POO - Jubileu quer aprender Programação Orientada a Objetos](./poo)
 * [SOLID - Jubileu quer aprender mais sobre SOLID](./solid)
 * [Domain Driven Design - Jubileu atacando a complexidade do coração do software](./ddd)
+* [Kubernetes - jubileu e seus pods](./kubernetes)
 
 * [Langchain](./langchain)
 
