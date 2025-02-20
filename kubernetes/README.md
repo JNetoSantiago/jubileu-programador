@@ -283,3 +283,148 @@ spec:
             - name: SECRET_KEY_BASE
               value: "1b5566dab59a73a61c60637b180dfb4f08bdd30f4d2d32f1459cec3465a89934dd44c86d42c6027496a9a99e332e96f87c4f77c6f2db6f093454eb938b0416d6"
 ```
+
+Aplicamos as mudanças com:
+```sh
+kubectl apply -f k8s/deployment.yaml
+```
+
+Podemos ver nosso deployment set em:
+```sh
+kubectl get deployments
+```
+
+Podemos detalhar nosso deployment set em:
+```sh
+kubectl describe deployments kubernet-rails
+```
+
+Se quiser acessar a sua aplicação rode o comando:
+```sh
+kubectl get pods
+```
+
+```sh
+kubectl port-forward pod/kubernetes-rails-fbb45d985-mc6c8 3000:3000
+```
+
+e abra em http://localhost:3000
+
+# Rollout e revisões
+
+Com o rollout, ao alterarmos a imagem ou outra configuração do deployment, ele reinicia os pods gradualmente, bem como permite, em conjunto com as revisions fazer rollbacks.
+Uma nova revision é criada quando um deployment é alterado, assim podemos navegar entre versões.
+Ex: Se subirmos algo defeituoso, podemos dar um rollback voltando para a versão anterior.
+
+O comando para visualizar o status de um rollout é:
+```sh
+kubectl rollout status deployment kubernetes-rails
+```
+
+Para ver o histórico de mudanças de um Deployment:
+```sh
+kubectl rollout history deployment kubernetes-rails
+```
+
+Para fazer um rollback (voltar à versão anterior):
+```sh
+kubectl rollout undo deployment kubernetes-rails
+```
+Para ver as revisões disponíveis
+```sh
+kubectl rollout history deployment kubernetes-rails
+```
+
+Voltar para uma versão específica
+```sh
+kubectl rollout undo deployment kubernetes-rails --to-revision=2
+```
+
+# Service
+O service expõe nossos pods atribuindo a eles um IP. Por meio desse IP ele distribui o tráfego para os pods disponíveis.
+Os Services atuam como uma camada de abstração sobre os Pods, permitindo que outros serviços ou usuários acessem os Pods.
+
+Tipos de Services no Kubernetes:
+
+* ClusterIP: Nosso service fica disponível para comunicação interna. Ele cria um IP interno, o qu eé útil por exemplo para conectar um backend com um banco de dados. Mas o pod não fica acessível externamente.
+* NodePort: Expõe o service para o mundo externo em uma porta específica.
+* LoadBalancer: Cria um balanceador de carga que distribui os acessos entre os pods.
+* ExternalName: redireciona o tráfego para um dominio externo.
+
+### ClusterIP:
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: "kubernetes-rails-service"
+spec:
+  selector:
+    app: "kubernetes-rails"
+  type: ClusterIP
+  ports:
+  - name: "kubernetes-rails-service"
+    port: 3000
+    targetPort: 3000
+    protocol: TCP
+```
+
+Obs: o `port` é a porta do service que deve ser acessado. Já o `targetPort` é a porta do container. OU seja, acessamos nosso service pela `port` e ele redireciona para a `targetPort` do service.
+
+Aplicamos as mudanças com:
+```sh
+kubectl apply -f k8s/service.yaml
+```
+
+Listar Services rodando no cluster
+```sh
+kubectl get services
+```
+
+Ver detalhes do Service
+```sh
+kubectl describe service kubernetes-rails-service
+```
+
+Deletar um Service
+```sh
+kubectl delete service kubernetes-rails-service
+```
+
+### NodePort
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: "kubernetes-rails-service"
+spec:
+  selector:
+    app: "kubernetes-rails"
+  type: NodePort
+  ports:
+  - name: "kubernetes-rails-service"
+    port: 3000
+    targetPort: 3000
+    protocol: TCP
+    NodePort: 30001
+```
+
+### LoadBalancer
+
+Cria um IP externo para que os pods sejam acessados externamente. Sempre que quisermos liberar nossa aplicação para internet usamos o Load Balancer.
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: "kubernetes-rails-service"
+spec:
+  selector:
+    app: "kubernetes-rails"
+  type: LoadBalancer
+  ports:
+  - name: "kubernetes-rails-service"
+    port: 3000
+    targetPort: 3000
+    protocol: TCP
+```
