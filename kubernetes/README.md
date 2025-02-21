@@ -428,3 +428,191 @@ spec:
     targetPort: 3000
     protocol: TCP
 ```
+
+# Variáveis de ambiente
+
+Nós já vimos como lidar com variáveis de ambiente por alto:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "kubernetes-rails"
+  labels:
+    app: "kubernetes-rails"
+spec:
+  selector:
+    matchLabels:
+      app: "kubernetes-rails"
+  replicas: 5
+  template:
+    metadata:
+      name: "kubernetes-rails"
+      labels:
+        app: "kubernetes-rails"
+    spec:
+      containers:
+        - name: "kubernetes-rails"
+          image: "joaoneto123/rails-kubernets"
+          env:
+            - name: SECRET_KEY_BASE
+              value: "1b5566dab59a73a61c60637b180dfb4f08bdd30f4d2d32f1459cec3465a89934dd44c86d42c6027496a9a99e332e96f87c4f77c6f2db6f093454eb938b0416d6"
+```
+
+Veja que é passado um env, com um par de chave e valor, podendo passar quantos quiser.
+
+### ConfigMap
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "kubernetes-rails-env"
+data:
+  SECRET_KEY_BASE: "1b5566dab59a73a61c60637b180dfb4f08bdd30f4d2d32f1459cec3465a89934dd44c86d42c6027496a9a99e332e96f87c4f77c6f2db6f093454eb938b0416d6"
+  DATABASE_NAME: "kubernets_development"
+```
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "kubernetes-rails"
+  labels:
+    app: "kubernetes-rails"
+spec:
+  selector:
+    matchLabels:
+      app: "kubernetes-rails"
+  replicas: 1
+  template:
+    metadata:
+      name: "kubernetes-rails"
+      labels:
+        app: "kubernetes-rails"
+    spec:
+      containers:
+        - name: "kubernetes-rails"
+          image: "joaoneto123/rails-kubernets:v2"
+          env:
+            - name: SECRET_KEY_BASE
+              valueFrom:
+                configMapKeyRef:
+                  name: "kubernetes-rails-env"
+                  key: SECRET_KEY_BASE
+            - name: DATABASE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: "kubernetes-rails-env"
+                  key: DATABASE_NAME
+```
+
+ou simplesmente:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "kubernetes-rails"
+  labels:
+    app: "kubernetes-rails"
+spec:
+  selector:
+    matchLabels:
+      app: "kubernetes-rails"
+  replicas: 1
+  template:
+    metadata:
+      name: "kubernetes-rails"
+      labels:
+        app: "kubernetes-rails"
+    spec:
+      containers:
+        - name: "kubernetes-rails"
+          image: "joaoneto123/rails-kubernets:v2"
+          envFrom:
+            - configMapRef:
+              name: "kubernetes-rails-env"
+```
+
+# Health Check
+
+Usamos o Health Check, ou verificação de saúde, para garantir que os pods e containers estejam funcionando corretamente.
+
+Com isso nós conseguimos:
+* Detectar e reiniciar containers travados ou com erro.
+* Remover Pods com falha do balanceador de carga.
+* Garantir que apenas containers prontos recebam tráfego.
+
+# Probes
+Os Probes, nos permite, automaticamente monitorar a saude dos containers dentro dos Pods. Assim nosso cluster sabe o momento de receber tráfego e quando reiniciar o container.
+
+* Liveness Probe: Verifica se o nosso container está "vivo", se não estiver, reinicia.
+* Readiness Probe: Verifica se o container está pronto para receber tráfego. (se não tiver pronto, ele será removido do service)
+
+### Liveness Probe
+O Liveness Probe, verifica se o container travou e não está respondendo. Se a verificação falhar, o kubernetes reinicia o container.
+
+Aqui abaixo está um exemplo de implementação do Liveness Probe:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "kubernetes-rails"
+  labels:
+    app: "kubernetes-rails"
+spec:
+  selector:
+    matchLabels:
+      app: "kubernetes-rails"
+  replicas: 1
+  template:
+    metadata:
+      name: "kubernetes-rails"
+      labels:
+        app: "kubernetes-rails"
+    spec:
+      containers:
+        - name: "kubernetes-rails"
+          image: "joaoneto123/rails-kubernets:v2"
+          livenessProbe:
+            httpGet:
+              path: /healthz # endpoint da sua aplicação para o health check
+              port: 3000
+            periodSeconds: 5 # a cada cinco segundos verifica a saude da aplicação
+            failureThreshold: 1 # quando der problema, passado 1 segundo ele tenta reiniciar 
+            timeoutSeconds: 1 # se passar de 1 segundo para acessar a rota, ele da timeout
+            successThreshold: 1 # quantas vezes ele tem que testar pra ter certeza da saude da app
+          envFrom:
+            - configMapRef:
+              name: "kubernetes-rails-env"
+```
+
+Veja que o trecho de código é:
+
+```yaml
+livenessProbe:
+  httpGet:
+    path: /healthz # endpoint da sua aplicação para o health check
+    port: 3000
+  periodSeconds: 5 # a cada cinco segundos verifica a saude da aplicação
+  failureThreshold: 1 # quando der problema, passado 1 segundo ele tenta reiniciar 
+  timeoutSeconds: 1 # se passar de 1 segundo para acessar a rota, ele da timeout
+  successThreshold: 1 # quantas vezes ele tem que testar pra ter certeza da saude da app
+```
+
+### Readiness Probe
+Com o Readiness Probe, evitamos que um container que não está pronto, não receba tráfego. Se ele falhar, o Kubernetes vai remover ele do service, até que esteja pronto.
+```yaml
+readinessProbe:
+  httpGet:
+    path: /healthz # endpoint da sua aplicação para o health check
+    port: 3000
+  periodSeconds: 5 # a cada cinco segundos verifica a saude da aplicação
+  failureThreshold: 1 # quando der problema, passado 1 segundo ele tenta reiniciar 
+  timeoutSeconds: 1 # se passar de 1 segundo para acessar a rota, ele da timeout
+  successThreshold: 1 # quantas vezes ele tem que testar pra ter certeza da saude da app
+```
+
+### Readiness Probe + Liveness Probe
