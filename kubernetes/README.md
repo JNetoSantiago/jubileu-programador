@@ -613,6 +613,282 @@ readinessProbe:
   failureThreshold: 1 # quando der problema, passado 1 segundo ele tenta reiniciar 
   timeoutSeconds: 1 # se passar de 1 segundo para acessar a rota, ele da timeout
   successThreshold: 1 # quantas vezes ele tem que testar pra ter certeza da saude da app
+  initialDelaySeconds: 10 # ele vai esperar 10 segundos para o readiness começar a funcionar
 ```
 
 ### Readiness Probe + Liveness Probe
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "kubernetes-rails"
+  labels:
+    app: "kubernetes-rails"
+spec:
+  selector:
+    matchLabels:
+      app: "kubernetes-rails"
+  replicas: 1
+  template:
+    metadata:
+      name: "kubernetes-rails"
+      labels:
+        app: "kubernetes-rails"
+    spec:
+      containers:
+        - name: "kubernetes-rails"
+          image: "joaoneto123/rails-kubernets:v2"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            periodSeconds: 3
+            failureThreshold: 1
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            periodSeconds: 5
+            failureThreshold: 1
+            timeoutSeconds: 1
+            successThreshold: 1
+          envFrom:
+            - configMapRef:
+              name: "kubernetes-rails-env"
+```
+
+### Startup Probe
+
+O Startup Probe é um tipo de probe no Kubernetes que verifica se um container já finalizou sua inicialização. Ele garante que o readiness e o liveness só irão iniciar quando a aplicação estiver pronta.
+Abaixo podemos ver que em 90 minutos ele vai esperar a aplicação ficar pronta, depois disso o readiness e o liveness passam a valer.
+
+```yaml
+startupProbe:
+  httpGet:
+    path: /healthz # endpoint da sua aplicação para o health check
+    port: 3000
+  periodSeconds: 3 # a cada 3 segundos verifica a saude da aplicação
+  failureThreshold: 30 # quando der problema, passado 1 segundo ele tenta reiniciar 
+```
+
+# Metrics Server
+
+Quando usamos o kind, ele não vem com o metrics-server. O Metrics Server é um componente essencial para monitoramento no Kubernetes. Ele coleta e disponibiliza métricas de uso de CPU e memória dos Pods e Nodes.
+
+ Principais funções:
+* Permite o funcionamento do HPA (Horizontal Pod Autoscaler).
+* Suporta comandos como kubectl top pod e kubectl top node.
+* Fornece métricas para ferramentas de monitoramento (ex: Prometheus, Grafana).
+
+Como Funciona o Metrics Server?
+
+* O Metrics Server coleta métricas diretamente do Kubelet de cada Node.
+* Os dados são armazenados apenas em memória (não são persistidos).
+* Ele não fornece métricas históricas – para isso, use o Prometheus.
+
+Com ele temos as métricas para fazer o autoscaling.
+
+### Instalação do metrics-server para o kind
+Primeiro vamos baixar o metrics server dentro da nossa pasta k8s:
+
+```sh
+wget https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+```
+
+Em seguida vamos renomear para metrics-server.yaml
+
+Abaixo da linha 139, vamos adicionar um novo argumento para o container:
+```yaml
+- --kubelet-insecure-tls
+```
+
+Que ficará assim:
+
+```yaml
+containers:
+  - args:
+    - --cert-dir=/tmp
+    - --secure-port=10250
+    - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+    - --kubelet-use-node-status-port
+    - --metric-resolution=15s
+    - --kubelet-insecure-tls
+```
+
+Em seguida aplicar o yaml
+
+```sh
+kubectl apply -f k8s/metrics-server.yaml
+```
+
+Vamos verificar se já está instalado com:
+
+```sh
+kubectl get apiservices
+```
+
+Veja como deve ser o retorno:
+```
+kubectl get apiservices
+NAME                              SERVICE                      AVAILABLE                  AGE
+v1.                               Local                        True                       53s
+v1.admissionregistration.k8s.io   Local                        True                       53s
+v1.apiextensions.k8s.io           Local                        True                       53s
+v1.apps                           Local                        True                       53s
+v1.authentication.k8s.io          Local                        True                       53s
+v1.authorization.k8s.io           Local                        True                       53s
+v1.autoscaling                    Local                        True                       53s
+v1.batch                          Local                        True                       53s
+v1.certificates.k8s.io            Local                        True                       53s
+v1.coordination.k8s.io            Local                        True                       53s
+v1.discovery.k8s.io               Local                        True                       53s
+v1.events.k8s.io                  Local                        True                       53s
+v1.flowcontrol.apiserver.k8s.io   Local                        True                       53s
+v1.networking.k8s.io              Local                        True                       53s
+v1.node.k8s.io                    Local                        True                       53s
+v1.policy                         Local                        True                       53s
+v1.rbac.authorization.k8s.io      Local                        True                       53s
+v1.scheduling.k8s.io              Local                        True                       53s
+v1.storage.k8s.io                 Local                        True                       53s
+v1beta1.metrics.k8s.io            kube-system/metrics-server   False (MissingEndpoints)   10s
+v2.autoscaling                    Local                        True                       53s
+```
+
+Repare que ele está instalado como: `v1beta1.metrics.k8s.io`.
+
+### Resources
+
+No Kubernetes, resources são configurações que definem como os pods e containers utilizam os recursos do cluster, como CPU e memória. Isso é essencial para garantir que as aplicações rodem de maneira eficiente e estável, evitando o consumo excessivo de recursos por um único pod.
+
+Tipos principais:
+
+* CPU: Mede-se em millicores (m). Exemplo: 100m (0.1 core), 500m (0.5 core), 1 (1 core).
+* Memória: Mede-se em bytes, mas normalmente usa-se MiB (Mebibytes) ou GiB (Gibibytes). Exemplo: 256Mi, 1Gi.
+
+#### Requests e Limits
+##### Requests
+
+Define o valor mínimo de recursos que o container precisa para rodar. O Kubernetes usa esse valor para agendar o pod em um nó que tenha capacidade suficiente.
+
+```yaml
+resources:
+  requests:
+    cpu: "250m"
+    memory: "128Mi"
+```
+
+O container receberá pelo menos 250 millicores de CPU e 128Mi de memória.
+
+##### Limits
+
+Define o valor máximo de recursos que um container pode usar. Se ultrapassar esse valor, o Kubernetes pode limitar o consumo (no caso de CPU) ou matar o pod (no caso de memória).
+
+```yaml
+resources:
+  limits:
+    cpu: "500m"
+    memory: "256Mi"
+```
+
+O container não pode ultrapassar 500 millicores de CPU e 256Mi de memória.
+
+Obs:
+
+* Se requests não for definido, o Kubernetes assume que o container não precisa de nada específico, podendo ser alocado de forma aleatória.
+* Se limits não for definido, o container pode consumir o máximo de recursos disponíveis no nó, o que pode afetar outras aplicações.
+
+Para monitorar os recursos podemos usar:
+
+```sh
+kubectl top pods
+kubectl top nodes
+```
+
+Ou usar ferramentas como Prometheus + Grafana para uma visualização mais detalhada.
+
+Veja como fica nosso deployment completo:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "kubernetes-rails"
+  labels:
+    app: "kubernetes-rails"
+spec:
+  selector:
+    matchLabels:
+      app: "kubernetes-rails"
+  replicas: 1
+  template:
+    metadata:
+      name: "kubernetes-rails"
+      labels:
+        app: "kubernetes-rails"
+    spec:
+      containers:
+        - name: "kubernetes-rails"
+          image: "joaoneto123/rails-kubernets:v2"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 20Mi
+            limits:
+              cpu: 500m
+              memory: 25Mi
+          startupProbe:
+            httpGet:
+              path: /healthz # endpoint da sua aplicação para o health check
+              port: 3000
+            periodSeconds: 3 # a cada 3 segundos verifica a saude da aplicação
+            failureThreshold: 10 # quando der problema, passado 1 segundo ele tenta reiniciar 
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            periodSeconds: 3
+            failureThreshold: 1
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            periodSeconds: 5
+            failureThreshold: 1
+            timeoutSeconds: 1
+            successThreshold: 1
+          envFrom:
+            - configMapRef:
+              name: "kubernetes-rails-env"
+```
+
+# HPA
+
+O HPA (Horizontal Pod Autoscaler) é um recurso do Kubernetes que ajusta automaticamente o número de réplicas de Pods com base na demanda de CPU, memória ou métricas personalizadas.
+Assim garantimos a escalabilidade automática e manteremos a aplicação responsiva sem desperdício de recursos.
+
+O HPA monitora métricas dos Pods, como: 
+* Uso de CPU
+* Uso de memória
+* Métricas personalizadas (exemplo: requisições HTTP por segundo)
+
+Se a demanda aumenta → O Kubernetes cria mais réplicas do Pod.
+Se a demanda diminui → O Kubernetes remove réplicas desnecessárias.
+
+Vamos criar um arquivo de configuração do HPA
+
+```yaml
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: kubernetes-rails-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    name: kubernetes-rails # nome do deployment
+    kind: Deployment
+  minReplicas: 1 # em prod iremos usar no minimo 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 75
+```
