@@ -551,125 +551,91 @@ Os Probes, nos permite, automaticamente monitorar a saude dos containers dentro 
 * Readiness Probe: Verifica se o container está pronto para receber tráfego. (se não tiver pronto, ele será removido do service)
 
 ### Liveness Probe
-O Liveness Probe, verifica se o container travou e não está respondendo. Se a verificação falhar, o kubernetes reinicia o container.
+No Kubernetes, o liveness probe é usado para verificar se um container ainda está em execução. Se a verificação falhar, o container será reiniciado.
 
-Aqui abaixo está um exemplo de implementação do Liveness Probe:
+Métodos de Verificação:
+* exec: Executa um comando dentro do container. Se o comando retornar 0, o probe é bem-sucedido.
+* httpGet: Faz uma requisição HTTP para um endpoint do container. Se retornar um código 2xx ou 3xx, o probe passa.
+* tcpSocket: Tenta abrir uma conexão TCP na porta especificada. Se conseguir conectar, o probe passa.
+* grpc: Testa um serviço gRPC.
 
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: "kubernetes-rails"
-  labels:
-    app: "kubernetes-rails"
-spec:
-  selector:
-    matchLabels:
-      app: "kubernetes-rails"
-  replicas: 1
-  template:
-    metadata:
-      name: "kubernetes-rails"
-      labels:
-        app: "kubernetes-rails"
-    spec:
-      containers:
-        - name: "kubernetes-rails"
-          image: "joaoneto123/rails-kubernets:v2"
-          livenessProbe:
-            httpGet:
-              path: /healthz # endpoint da sua aplicação para o health check
-              port: 3000
-            periodSeconds: 5 # a cada cinco segundos verifica a saude da aplicação
-            failureThreshold: 1 # quando der problema, passado 1 segundo ele tenta reiniciar 
-            timeoutSeconds: 1 # se passar de 1 segundo para acessar a rota, ele da timeout
-            successThreshold: 1 # quantas vezes ele tem que testar pra ter certeza da saude da app
-          envFrom:
-            - configMapRef:
-              name: "kubernetes-rails-env"
-```
-
-Veja que o trecho de código é:
+Campos Gerais:
+* initialDelaySeconds: Tempo (em segundos) antes do primeiro probe ser executado após o container iniciar.
+* periodSeconds: Tempo (em segundos) entre execuções do probe.
+  * Valor Padrão: 10 segundos
+  * Valor Mínimo: 1
+* timeoutSeconds: Tempo (em segundos) máximo que o probe pode levar antes de ser considerado como falha.
+* successThreshold: Número mínimo de sucessos consecutivos para considerar o container saudável. (Para liveness deve ser sempre 1.)
+  * Valor Padrão: 1
+  * Valor Mínimo: 1
+* failureThreshold: Número de falhas consecutivas antes do container ser reiniciado.
+  * Valor Padrão: 3
+  * Valor Mínimo: 1
 
 ```yaml
 livenessProbe:
   httpGet:
-    path: /healthz # endpoint da sua aplicação para o health check
+    path: /healthz
     port: 3000
-  periodSeconds: 5 # a cada cinco segundos verifica a saude da aplicação
-  failureThreshold: 1 # quando der problema, passado 1 segundo ele tenta reiniciar 
-  timeoutSeconds: 1 # se passar de 1 segundo para acessar a rota, ele da timeout
-  successThreshold: 1 # quantas vezes ele tem que testar pra ter certeza da saude da app
+  periodSeconds: 5
+  failureThreshold: 1
+  timeoutSeconds: 1
+  successThreshold: 1
 ```
 
 ### Readiness Probe
-Com o Readiness Probe, evitamos que um container que não está pronto, não receba tráfego. Se ele falhar, o Kubernetes vai remover ele do service, até que esteja pronto.
+O readinessProbe no Kubernetes verifica se um container está pronto para receber tráfego. Se o probe falhar, o container não recebe requisições do serviço ou do load balancer, mas não é reiniciado (diferente do livenessProbe).
+
+Métodos de Verificação
+* exec: Executa um comando dentro do container e verifica o código de saída (0 = sucesso).
+* httpGet: Faz uma requisição HTTP e verifica se o código de resposta é 2xx ou 3xx.
+* tcpSocket: Tenta abrir uma conexão TCP na porta especificada. Se conseguir, o probe passa.
+* grpc: Testa um serviço gRPC.
+
+Campos Gerais:
+
+* initialDelaySeconds: Tempo (em segundos) antes do primeiro probe ser executado.
+* periodSeconds: Intervalo (em segundos) entre cada probe.
+* timeoutSeconds: Tempo máximo (em segundos) antes de considerar a verificação como falha.
+* successThreshold: Número de sucessos consecutivos para considerar o container pronto. (Padrão = 1.)
+* failureThreshold: Número de falhas consecutivas antes de marcar o container como não pronto.
+
 ```yaml
 readinessProbe:
   httpGet:
-    path: /healthz # endpoint da sua aplicação para o health check
+    path: /healthz
     port: 3000
-  periodSeconds: 5 # a cada cinco segundos verifica a saude da aplicação
-  failureThreshold: 1 # quando der problema, passado 1 segundo ele tenta reiniciar 
-  timeoutSeconds: 1 # se passar de 1 segundo para acessar a rota, ele da timeout
-  successThreshold: 1 # quantas vezes ele tem que testar pra ter certeza da saude da app
-  initialDelaySeconds: 10 # ele vai esperar 10 segundos para o readiness começar a funcionar
-```
-
-### Readiness Probe + Liveness Probe
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: "kubernetes-rails"
-  labels:
-    app: "kubernetes-rails"
-spec:
-  selector:
-    matchLabels:
-      app: "kubernetes-rails"
-  replicas: 1
-  template:
-    metadata:
-      name: "kubernetes-rails"
-      labels:
-        app: "kubernetes-rails"
-    spec:
-      containers:
-        - name: "kubernetes-rails"
-          image: "joaoneto123/rails-kubernets:v2"
-          readinessProbe:
-            httpGet:
-              path: /healthz
-              port: 3000
-            periodSeconds: 3
-            failureThreshold: 1
-            initialDelaySeconds: 10
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: 3000
-            periodSeconds: 5
-            failureThreshold: 1
-            timeoutSeconds: 1
-            successThreshold: 1
-          envFrom:
-            - configMapRef:
-              name: "kubernetes-rails-env"
+  periodSeconds: 5
+  failureThreshold: 1
+  timeoutSeconds: 1
+  successThreshold: 1
+  initialDelaySeconds: 10
 ```
 
 ### Startup Probe
 
-O Startup Probe é um tipo de probe no Kubernetes que verifica se um container já finalizou sua inicialização. Ele garante que o readiness e o liveness só irão iniciar quando a aplicação estiver pronta.
-Abaixo podemos ver que em 90 minutos ele vai esperar a aplicação ficar pronta, depois disso o readiness e o liveness passam a valer.
+O startupProbe no Kubernetes verifica se um container iniciou corretamente. Ele é útil para aplicações que demoram para iniciar, como serviços que carregam muitas dependências ou fazem migrações no banco. Se o startupProbe estiver configurado, o Kubernetes só executa livenessProbe e readinessProbe depois que o startupProbe for bem-sucedido.
+
+Métodos de Verificação
+* exec: Executa um comando dentro do container. Retorno 0 indica sucesso.
+* httpGet: Faz uma requisição HTTP e verifica se a resposta é 2xx ou 3xx.
+* tcpSocket: Verifica se consegue abrir uma conexão TCP.
+* grpc: Testa um serviço gRPC.
+
+Campos Gerais
+* initialDelaySeconds: Tempo antes da primeira checagem (padrão = 0).
+* periodSeconds: Intervalo entre cada tentativa (padrão = 10).
+* timeoutSeconds: Tempo máximo para a resposta do probe.
+* failureThreshold: Número de falhas consecutivas antes do container ser reiniciado.
+* successThreshold: Normalmente 1, já que basta passar uma vez para ser considerado iniciado.
 
 ```yaml
 startupProbe:
   httpGet:
-    path: /healthz # endpoint da sua aplicação para o health check
+    path: /healthz
     port: 3000
-  periodSeconds: 3 # a cada 3 segundos verifica a saude da aplicação
-  failureThreshold: 30 # quando der problema, passado 1 segundo ele tenta reiniciar 
+  periodSeconds: 3
+  failureThreshold: 30
 ```
 
 # Metrics Server
@@ -839,10 +805,10 @@ spec:
               memory: 25Mi
           startupProbe:
             httpGet:
-              path: /healthz # endpoint da sua aplicação para o health check
+              path: /healthz
               port: 3000
-            periodSeconds: 3 # a cada 3 segundos verifica a saude da aplicação
-            failureThreshold: 10 # quando der problema, passado 1 segundo ele tenta reiniciar 
+            periodSeconds: 3
+            failureThreshold: 10
           readinessProbe:
             httpGet:
               path: /healthz
@@ -892,3 +858,141 @@ spec:
   maxReplicas: 5
   targetCPUUtilizationPercentage: 75
 ```
+
+```YAML
+kubectl get hpa
+watch -n1 kubectl get hpa
+```
+
+
+# Usando o Fortio para teste de stress
+
+```sh
+kubectl run -it fortio --rm --image=fortio/fortio -- load -qps 800 -t 120s -c 70 "http://kubernetes-rails-service:3000/up"
+```
+
+# Persistent Volume
+
+No Kubernetes, um Persistent Volume (PV) é um recurso que fornece armazenamento persistente para os pods. Isso é útil porque, por padrão, os pods são efêmeros e seus dados são perdidos se forem reiniciados ou recriados.
+
+#### Persistent Volume (PV)
+
+* É um recurso do cluster Kubernetes que representa um volume de armazenamento.
+* Pode ser provisionado manualmente ou dinamicamente por um StorageClass.
+* Sobrevive à reinicialização ou recriação dos pods.
+
+#### Persistent Volume Claim (PVC)
+
+* É um pedido de armazenamento feito por um pod.
+* O PVC solicita um PV com certas características (tamanho, modo de acesso, etc.).
+* O Kubernetes vincula automaticamente um PV disponível ao PVC, se compatível.
+
+#### StorageClass
+
+* Define a política de provisionamento dinâmico de volumes.
+* Permite ao cluster criar volumes automaticamente em um provedor de armazenamento (EBS, GCE, NFS, etc.).
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kubernetes-rails-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+```
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "kubernetes-rails"
+  labels:
+    app: "kubernetes-rails"
+spec:
+  selector:
+    matchLabels:
+      app: "kubernetes-rails"
+  replicas: 1
+  template:
+    metadata:
+      name: "kubernetes-rails"
+      labels:
+        app: "kubernetes-rails"
+    spec:
+      containers:
+        - name: "kubernetes-rails"
+          image: "joaoneto123/rails-kubernets:v2"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 20Mi
+            limits:
+              cpu: 500m
+              memory: 25Mi
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            periodSeconds: 3
+            failureThreshold: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            periodSeconds: 3
+            failureThreshold: 1
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            periodSeconds: 5
+            failureThreshold: 1
+            timeoutSeconds: 1
+            successThreshold: 1
+          envFrom:
+            - configMapRef:
+              name: "kubernetes-rails-env"
+          volumeMounts:
+            - name: rails-storage
+              mountPath: /app/storage # diretorio onde o volume será montado
+      volumes:
+        - name: rails-storage
+          persistentVolumeClaim:
+            claimName: kubernetes-rails-pvc # nome do PVC a ser usado
+```
+
+## StatefulSet
+
+Problema: 
+Imagine que temos 3 pods cada um rodando um mysql, e cada um com seu volume. Um pod contém o mysql master e os outros dois pods contem os slaves.
+Quando usamos deployment, e criamos nossas replicas, iriamos querer que primeiro fosse criado o pod com o mysql master e depois os slaves, pois os slaves precisam copiar os dados do volume do pod com o mysql master para o seu próprio volume.
+O mesmo para quando os volumes forem removidos, se queremos agora dois pods, não podemos destruir o pod master.
+Assim precisamos criar e remover pods de maneira ordenada, e é aí onde entra o StatefulSet.
+
+O StatefulSet é um recurso do Kubernetes usado para gerenciar aplicações stateful (com estado), garantindo que cada pod tenha uma identidade única e persistente, mesmo após reinicializações ou recriações.
+
+Pods com Identidade Fixa
+* Cada pod recebe um nome fixo no formato nome-do-statefulset-0, nome-do-statefulset-1, etc.
+* Diferente do Deployment, onde os pods são intercambiáveis, no StatefulSet a ordem e a identidade são importantes.
+
+Volumes Persistentes
+* Cada pod pode ter seu próprio PersistentVolumeClaim (PVC), garantindo que os dados não sejam perdidos quando o pod for recriado.
+* O PVC é vinculado ao pod com um nome específico, o que mantém a integridade dos dados.
+
+Criação e Remoção Ordenada
+* Os pods são criados e destruídos um de cada vez, garantindo que sempre haja um pod funcional antes do próximo ser criado/removido.
+* Ideal para aplicações como bancos de dados (PostgreSQL, MySQL, MongoDB) ou sistemas distribuídos (Kafka, Elasticsearch).
+
+Garantia de Nome DNS Estável
+* O Kubernetes atribui um DNS fixo para cada pod no StatefulSet, permitindo que serviços possam se comunicar diretamente sem precisar de um serviço de descoberta.
+
+
+
+Erros comuns:
+
+https://medium.com/@adnanitdev/fix-for-error-panic-could-not-locate-a-valid-checkpoint-record-in-postgres-or-citus-running-in-b03d8341a258
